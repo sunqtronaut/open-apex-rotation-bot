@@ -88,7 +88,6 @@ def run_telegram_bot():
     application = Application.builder().token(TELEGRAM_TOKEN).build()
 
     # Add handlers
-    application.add_handler(CommandHandler("start", start))  # Optional: Keep /start command
     application.add_handler(CallbackQueryHandler(button_handler))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, show_buttons))  # Handle any text message
 
