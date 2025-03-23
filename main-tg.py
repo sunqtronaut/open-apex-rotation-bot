@@ -88,7 +88,7 @@ def run_telegram_bot():
     application = Application.builder().token(TELEGRAM_TOKEN).build()
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CallbackQueryHandler(button_handler))
-    application.run_polling(poll_interval=1.0)
+    application.run_polling(poll_interval=1.0, drop_pending_updates=True)
 
 def run_health_check():
     port = int(os.environ.get("PORT", 5000))  # Render uses the PORT environment variable
