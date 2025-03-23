@@ -7,7 +7,7 @@ from telegram.ext import Application, CommandHandler, CallbackContext
 
 from flask import Flask, redirect
 
-# Flask application for a health check
+# Flask application for a placeholder/health check
 app = Flask(__name__)
 
 @app.route("/")
