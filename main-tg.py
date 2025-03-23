@@ -5,6 +5,24 @@ import os
 from telegram import Update
 from telegram.ext import Application, CommandHandler, CallbackContext
 
+from flask import Flask, redirect
+
+# Flask application for a health check
+app = Flask(__name__)
+
+@app.route("/")
+def home():
+    return "This is a Telegram bot for Apex Legends map rotation. Use it in Telegram https://t.me/@openapexrotation_bot to get map schedules."
+
+@app.route("/redirect")
+def redirect_to_base():
+    return redirect(BASE_URL, code=302)
+
+def run_flask():
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
+
+
 def fetch_html(url):
     response = requests.get(url)
     response.raise_for_status()
@@ -55,25 +73,33 @@ async def get(update: Update, context: CallbackContext) -> None:
     await update.message.reply_text(schedule, disable_web_page_preview=True)
 
 # load_dotenv()
-BASE_URL = os.environ.get('BASE_URL', "https://apexlegendsstatus.com/current-map/battle_royale")
 # BASE_URL = os.getenv('BASE_URL', "https://apexlegendsstatus.com/current-map/battle_royale")
-PUBS_URL = f"{BASE_URL}/pubs"
-RANKED_URL = f"{BASE_URL}/ranked"
 # MAP_NAME = os.getenv('MAP_NAME', "Kings Canyon")
 # TELEGRAM_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
+
+BASE_URL = os.environ.get('BASE_URL', "https://apexlegendsstatus.com/current-map/battle_royale")
 MAP_NAME = os.environ.get('MAP_NAME', "Kings Canyon")
 TELEGRAM_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN')
+
+PUBS_URL = f"{BASE_URL}/pubs"
+RANKED_URL = f"{BASE_URL}/ranked"
 
 if not TELEGRAM_TOKEN:
     raise ValueError("TELEGRAM_BOT_TOKEN is not set. Please set it in the .env file.")
 
+from threading import Thread
+
 def main():
-    application = Application.builder().token(TELEGRAM_TOKEN).build()
+    def run_telegram_bot():
+        application = Application.builder().token(TELEGRAM_TOKEN).build()
+        application.add_handler(CommandHandler("start", start))
+        application.add_handler(CommandHandler("get", get))
+        application.run_polling(poll_interval=1.0)
 
-    application.add_handler(CommandHandler("start", start))
-    application.add_handler(CommandHandler("get", get))
+    flask_thread = Thread(target=run_flask)
+    flask_thread.start()
 
-    application.run_polling(poll_interval=1.0)
+    run_telegram_bot()
 
 if __name__ == "__main__":
     main()
