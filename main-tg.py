@@ -1,27 +1,16 @@
 import requests
 from bs4 import BeautifulSoup
 import os
-# from dotenv import load_dotenv
-from telegram import Update
-from telegram.ext import Application, CommandHandler, CallbackContext
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import Application, CommandHandler, CallbackQueryHandler, CallbackContext
+from flask import Flask
 
-from flask import Flask, redirect
-
-# Flask application for a placeholder/health check
+# Flask application for health check
 app = Flask(__name__)
 
 @app.route("/")
-def home():
-    return "This is a Telegram bot for Apex Legends map rotation. Use it in Telegram https://t.me/@openapexrotation_bot to get map schedules."
-
-@app.route("/redirect")
-def redirect_to_base():
-    return redirect(BASE_URL, code=302)
-
-def run_flask():
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
-
+def health_check():
+    return "Health check: OK", 200
 
 def fetch_html(url):
     response = requests.get(url)
@@ -31,7 +20,6 @@ def fetch_html(url):
 def parse_schedule(html, map_name):
     soup = BeautifulSoup(html, 'html.parser')
     sections = soup.find_all('div', style=lambda value: value and 'background' in value)
-    # print(f"Found {len(sections)} sections for map {map_name}")  # Debug print
     schedule = []
     for section in sections:
         map_title = section.find('h3').text.strip()
@@ -42,14 +30,12 @@ def parse_schedule(html, map_name):
     return schedule
 
 def format_schedule(schedule, mode, url):
-    output = [f"{mode} {MAP_NAME}: {url}"]
+    output = [f"{mode} {url}"]
     for entry in schedule:
         output.append(f"{entry}")
     return "\n".join(output)
 
 def get_schedule(map_name):
-    print("All times are in UTC")
-
     pubs_html = fetch_html(PUBS_URL)
     pubs_schedule = parse_schedule(pubs_html, map_name)
     pubs_output = format_schedule(pubs_schedule, "PUBS", PUBS_URL)
@@ -61,42 +47,56 @@ def get_schedule(map_name):
     return f"{pubs_output}\n\n{ranked_output}"
 
 async def start(update: Update, context: CallbackContext) -> None:
-    await update.message.reply_text('Send /get <mapname> to get the schedule for a specific map.')
+    # Create buttons for map selection
+    keyboard = [
+        [InlineKeyboardButton("Kings Canyon", callback_data="Kings Canyon")],
+        [InlineKeyboardButton("Worlds Edge", callback_data="Worlds Edge")],
+        [InlineKeyboardButton("Broken Moon", callback_data="Broken Moon")],
+        [InlineKeyboardButton("Olympys", callback_data="Olympys")],
+        [InlineKeyboardButton("Storm Point", callback_data="Storm Point")]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
 
-async def get(update: Update, context: CallbackContext) -> None:
-    if len(context.args) == 0:
-        await update.message.reply_text('Please provide a map name.')
-        return
+    # Send message with buttons
+    await update.message.reply_text(
+        "Choose a map to get the schedule:", reply_markup=reply_markup
+    )
 
-    map_name = ' '.join(context.args)
+async def button_handler(update: Update, context: CallbackContext) -> None:
+    query = update.callback_query
+    await query.answer()  # Acknowledge the button press
+
+    # Get the map name from callback_data
+    map_name = query.data
     schedule = get_schedule(map_name)
-    await update.message.reply_text(schedule, disable_web_page_preview=True)
 
-# load_dotenv()
-# BASE_URL = os.getenv('BASE_URL', "https://apexlegendsstatus.com/current-map/battle_royale")
-# MAP_NAME = os.getenv('MAP_NAME', "Kings Canyon")
-# TELEGRAM_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
+    # Send the schedule
+    await query.edit_message_text(schedule, disable_web_page_preview=True)
 
 BASE_URL = os.environ.get('BASE_URL', "https://apexlegendsstatus.com/current-map/battle_royale")
-MAP_NAME = os.environ.get('MAP_NAME', "Kings Canyon")
 TELEGRAM_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN')
 
 PUBS_URL = f"{BASE_URL}/pubs"
 RANKED_URL = f"{BASE_URL}/ranked"
 
 if not TELEGRAM_TOKEN:
-    raise ValueError("TELEGRAM_BOT_TOKEN is not set. Please set it in the .env file.")
+    raise ValueError("TELEGRAM_BOT_TOKEN is not set. Please set it in the environment variables.")
 
 from threading import Thread
 
-def main():
-    def run_telegram_bot():
-        application = Application.builder().token(TELEGRAM_TOKEN).build()
-        application.add_handler(CommandHandler("start", start))
-        application.add_handler(CommandHandler("get", get))
-        application.run_polling(poll_interval=1.0)
+def run_telegram_bot():
+    application = Application.builder().token(TELEGRAM_TOKEN).build()
+    application.add_handler(CommandHandler("start", start))
+    application.add_handler(CallbackQueryHandler(button_handler))
+    application.run_polling(poll_interval=1.0)
 
-    flask_thread = Thread(target=run_flask)
+def run_health_check():
+    port = int(os.environ.get("PORT", 5000))  # Render uses the PORT environment variable
+    app.run(host="0.0.0.0", port=port)
+
+def main():
+    # Run Flask health check and Telegram bot in parallel
+    flask_thread = Thread(target=run_health_check)
     flask_thread.start()
 
     run_telegram_bot()
