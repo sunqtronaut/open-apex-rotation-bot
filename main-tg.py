@@ -2,7 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 import os
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Application, CommandHandler, CallbackQueryHandler, CallbackContext, MessageHandler, filters
+from telegram.ext import Application, CallbackQueryHandler, CallbackContext, MessageHandler, filters
 from flask import Flask
 
 # Flask application for health check
@@ -57,10 +57,8 @@ async def show_buttons(update: Update, context: CallbackContext) -> None:
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
-    # Send message with buttons
-    await update.message.reply_text(
-        "Choose a map to get the schedule:", reply_markup=reply_markup
-    )
+    # Send only buttons without any text
+    await update.message.reply_text(reply_markup=reply_markup)
 
 async def button_handler(update: Update, context: CallbackContext) -> None:
     query = update.callback_query
@@ -88,8 +86,8 @@ def run_telegram_bot():
     application = Application.builder().token(TELEGRAM_TOKEN).build()
 
     # Add handlers
-    application.add_handler(CallbackQueryHandler(button_handler))
-    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, show_buttons))  # Handle any text message
+    application.add_handler(CallbackQueryHandler(button_handler))  # Handle button clicks
+    application.add_handler(MessageHandler(filters.ALL, show_buttons))  # Show buttons for any interaction
 
     # Start polling
     application.run_polling(poll_interval=1.0, drop_pending_updates=True)
