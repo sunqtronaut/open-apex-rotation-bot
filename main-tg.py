@@ -2,7 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 import os
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Application, CommandHandler, CallbackQueryHandler, CallbackContext
+from telegram.ext import Application, CommandHandler, CallbackQueryHandler, CallbackContext, MessageHandler, filters
 from flask import Flask
 
 # Flask application for health check
@@ -46,14 +46,14 @@ def get_schedule(map_name):
 
     return f"{pubs_output}\n\n{ranked_output}"
 
-async def start(update: Update, context: CallbackContext) -> None:
+async def show_buttons(update: Update, context: CallbackContext) -> None:
     # Create buttons for map selection
     keyboard = [
         [InlineKeyboardButton("Kings Canyon", callback_data="Kings Canyon")],
         [InlineKeyboardButton("Worlds Edge", callback_data="Worlds Edge")],
         [InlineKeyboardButton("Broken Moon", callback_data="Broken Moon")],
         [InlineKeyboardButton("Olympys", callback_data="Olympys")],
-        [InlineKeyboardButton("Storm Point", callback_data="Storm Point")]
+        [InlineKeyboardButton("Storm Point", callback_data="Storm Point")],
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
@@ -86,8 +86,13 @@ from threading import Thread
 
 def run_telegram_bot():
     application = Application.builder().token(TELEGRAM_TOKEN).build()
-    application.add_handler(CommandHandler("start", start))
+
+    # Add handlers
+    application.add_handler(CommandHandler("start", start))  # Optional: Keep /start command
     application.add_handler(CallbackQueryHandler(button_handler))
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, show_buttons))  # Handle any text message
+
+    # Start polling
     application.run_polling(poll_interval=1.0, drop_pending_updates=True)
 
 def run_health_check():
