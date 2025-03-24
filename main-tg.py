@@ -49,11 +49,17 @@ def get_schedule(map_name):
 async def show_buttons(update: Update, context: CallbackContext) -> None:
     # Create buttons for map selection
     keyboard = [
-        [InlineKeyboardButton("Kings Canyon", callback_data="Kings Canyon")],
-        [InlineKeyboardButton("Worlds Edge", callback_data="Worlds Edge")],
-        [InlineKeyboardButton("Broken Moon", callback_data="Broken Moon")],
-        [InlineKeyboardButton("Olympys", callback_data="Olympys")],
-        [InlineKeyboardButton("Storm Point", callback_data="Storm Point")],
+        [
+            InlineKeyboardButton("Kings Canyon", callback_data="Kings Canyon"),
+            InlineKeyboardButton("Worlds Edge", callback_data="Worlds Edge"),
+        ],
+        [
+            InlineKeyboardButton("Broken Moon", callback_data="Broken Moon"),
+            InlineKeyboardButton("Olympys", callback_data="Olympys"),
+        ],
+        [
+            InlineKeyboardButton("Storm Point", callback_data="Storm Point"),
+        ]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
