@@ -57,8 +57,7 @@ async def show_buttons(update: Update, context: CallbackContext) -> None:
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
-    # Send only buttons without any text
-    await update.message.reply_text(reply_markup=reply_markup)
+    await update.message.reply_text("Choose a map:", reply_markup=reply_markup)
 
 async def button_handler(update: Update, context: CallbackContext) -> None:
     query = update.callback_query
