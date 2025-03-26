@@ -4,10 +4,13 @@ import aiohttp
 from bs4 import BeautifulSoup
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, BotCommand
 from telegram.ext import Application, CallbackQueryHandler, CallbackContext, CommandHandler
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Base URL and Telegram token from environment variables
-BASE_URL = os.environ.get('BASE_URL', "https://apexlegendsstatus.com/current-map/battle_royale")
-TELEGRAM_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN')
+BASE_URL = os.getenv('BASE_URL', "https://apexlegendsstatus.com/current-map/battle_royale")
+TELEGRAM_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
 
 PUBS_URL = f"{BASE_URL}/pubs"
 RANKED_URL = f"{BASE_URL}/ranked"
